@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Georgia&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-natural-bg: #F5F4F0;
+  --color-natural-sidebar: #EAE8E1;
+  --color-natural-accent: #5A5A40;
+  --color-natural-text: #2C2C26;
+  --color-natural-dim: #88867E;
+  --color-natural-border: rgba(0, 0, 0, 0.06);
+  --color-natural-glass: rgba(255, 255, 255, 0.4);
+
+  --font-sans: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Georgia', serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-natural-bg);
+  color: var(--color-natural-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-natural-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.1); }
+
