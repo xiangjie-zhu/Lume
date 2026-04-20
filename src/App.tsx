@@ -45,16 +45,6 @@ const getToolName = (tool: Tool) => {
   }
 }
 
-function WindowControls() {
-  return (
-    <div className="flex items-center space-x-2 px-4 py-3">
-      <div className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E] shadow-sm" />
-      <div className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123] shadow-sm" />
-      <div className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29] shadow-sm" />
-    </div>
-  );
-}
-
 function Sidebar({ onNewTab, show, setShow }: { onNewTab: (t: Tool) => void, show: boolean, setShow: (show: boolean) => void }) {
   const categories = [
     {
@@ -94,15 +84,13 @@ function Sidebar({ onNewTab, show, setShow }: { onNewTab: (t: Tool) => void, sho
       className={`bg-natural-sidebar flex flex-col h-full shrink-0 overflow-hidden z-20 relative border-transparent ${show ? 'border-r border-natural-border' : ''}`}
     >
       <div className="w-[240px] flex flex-col h-full shrink-0">
-        <WindowControls />
-        
+        <div
+          className="h-[38px] shrink-0"
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+        />
+
         <div className="font-serif italic text-2xl mb-6 px-4 flex items-center justify-between gap-2 text-natural-text mt-2">
-          <div className="flex items-center gap-2.5 select-none">
-            <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-black/5">
-              <div className="w-[14px] h-[14px] rounded-full bg-[#9fb09a]"></div>
-            </div>
-            <span className="mb-0.5 tracking-wide">Lume</span>
-          </div>
+          <span className="mb-0.5 tracking-wide select-none">Lume</span>
           <button 
             onClick={() => setShow(false)}
             className="p-1.5 rounded-md hover:bg-black/5 text-natural-dim hover:text-natural-text transition-colors"
@@ -201,13 +189,8 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-full font-sans overflow-hidden bg-natural-bg flex items-center justify-center p-4 md:p-8">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.98, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-        className="w-full max-w-[1200px] h-full max-h-[85vh] min-h-[600px] bg-natural-bg rounded-2xl shadow-[0_12px_48px_rgba(0,0,0,0.1)] border border-natural-border flex overflow-hidden relative"
-      >
+    <div className="h-screen w-full font-sans overflow-hidden bg-natural-bg">
+      <div className="w-full h-full bg-natural-bg flex relative">
         <Sidebar onNewTab={handleNewTab} show={showSidebar} setShow={setShowSidebar} />
         
         <main className="flex-1 relative bg-natural-bg h-full flex flex-col min-w-0">
@@ -292,7 +275,7 @@ export default function App() {
             ))}
           </div>
         </main>
-      </motion.div>
+      </div>
     </div>
   );
 }

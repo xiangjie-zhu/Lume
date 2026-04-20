@@ -31,6 +31,13 @@ export default function HomeDashboard({ onOpenFile, onNewReader, onNavigate }: H
 
   useEffect(() => {
     loadHistory();
+    const onUpdate = () => loadHistory();
+    window.addEventListener('lume-history-updated', onUpdate);
+    window.addEventListener('focus', onUpdate);
+    return () => {
+      window.removeEventListener('lume-history-updated', onUpdate);
+      window.removeEventListener('focus', onUpdate);
+    };
   }, []);
 
   const loadHistory = async () => {

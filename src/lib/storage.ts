@@ -52,6 +52,7 @@ export const saveToHistory = async (file: File): Promise<RecentFileMeta> => {
   }
   
   await localforage.setItem(HISTORY_KEY, metaList);
+  window.dispatchEvent(new CustomEvent('lume-history-updated'));
   return meta;
 };
 
@@ -76,4 +77,5 @@ export const clearHistory = async (): Promise<void> => {
     await localforage.removeItem(`file_${meta.id}`);
   }
   await localforage.removeItem(HISTORY_KEY);
+  window.dispatchEvent(new CustomEvent('lume-history-updated'));
 };

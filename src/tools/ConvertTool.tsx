@@ -60,7 +60,7 @@ export default function ConvertTool() {
         
         canvas.width = viewport.width;
         canvas.height = viewport.height;
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        await page.render({ canvasContext: ctx, canvas, viewport }).promise;
         
         urls.push({ id: i, url: canvas.toDataURL('image/png') });
       }
