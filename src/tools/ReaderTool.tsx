@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { toPng, toJpeg } from 'html-to-image';
 import { triggerDownload } from '../lib/utils';
+import { saveToHistory } from '../lib/storage';
 
 interface Annotation {
   id: string;
@@ -29,13 +30,13 @@ interface ContextMenuState {
 }
 
 export default function ReaderTool({ 
-  globalSidebarHidden, 
-  onOpenGlobalSidebar 
+  initialFile, 
+  onFileLoaded 
 }: { 
-  globalSidebarHidden?: boolean; 
-  onOpenGlobalSidebar?: () => void 
+  initialFile?: File; 
+  onFileLoaded?: (title: string, file?: File) => void 
 }) {
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(initialFile || null);
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
@@ -191,12 +192,19 @@ export default function ReaderTool({
     setDragState({ id, startX: e.clientX, startY: e.clientY, initialRect: { ...rect } });
   };
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selected = e.target.files[0];
+      setFile(selected);
       setPageNumber(1);
       setAnnotations([]); // Reset on new file
       setRedoStack([]); // Reset redo stack
+      
+      // Save to history automatically
+      await saveToHistory(selected);
+      if (onFileLoaded) {
+        onFileLoaded(selected.name, selected);
+      }
     }
   };
 
@@ -410,8 +418,8 @@ export default function ReaderTool({
           <div className="w-16 h-16 bg-natural-sidebar rounded-2xl flex items-center justify-center mx-auto mb-4">
             <FileText className="w-8 h-8 text-natural-accent" />
           </div>
-          <h2 className="text-xl font-serif text-natural-text mb-2">PDF Reader</h2>
-          <p className="text-natural-dim text-sm mb-6">Open a PDF file to read, search, and annotate.</p>
+          <h2 className="text-xl font-serif text-natural-text mb-2">Reader</h2>
+          <p className="text-natural-dim text-sm mb-6">Open a document to read, search, and annotate.</p>
           <label className="cursor-pointer bg-natural-accent text-white px-6 py-3 rounded-xl hover:opacity-90 transition-opacity inline-flex items-center shadow-sm">
             Open File
             <input type="file" accept="application/pdf" className="hidden" onChange={onFileChange} />
@@ -428,16 +436,6 @@ export default function ReaderTool({
       <div className={`flex flex-col gap-2 p-4 border-b ${darkMode ? 'border-gray-800 bg-[#252525]' : 'border-natural-border bg-white/50 backdrop-blur-md'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {globalSidebarHidden && (
-              <button 
-                onClick={onOpenGlobalSidebar}
-                className={`p-2 rounded-lg flex items-center transition-all duration-300 md:flex hover:bg-black/5 bg-white/40 shadow-sm border border-black/5 backdrop-blur-sm`}
-                title="Open Main Sidebar"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-natural-accent mr-2" />
-                <Menu className="w-4 h-4 text-natural-text" />
-              </button>
-            )}
             <button 
               onClick={() => setShowThumbnailsPanel(!showThumbnailsPanel)} 
               className={`p-2 rounded-lg flex items-center transition-colors hidden md:flex ${showThumbnailsPanel ? (darkMode ? 'bg-gray-800 text-gray-200' : 'bg-black/5 text-natural-text') : 'hover:bg-black/5'}`}
@@ -592,7 +590,10 @@ export default function ReaderTool({
             </div>
 
             <button 
-              onClick={() => setFile(null)} 
+              onClick={() => {
+                setFile(null);
+                if (onFileLoaded) onFileLoaded('Reader', undefined);
+              }} 
               className={`p-2 rounded-lg ml-1 transition-colors text-sm font-medium ${darkMode ? 'text-gray-400 hover:bg-gray-800 hover:text-gray-200' : 'text-natural-dim hover:bg-black/5 hover:text-natural-text'}`}
             >
               Close
