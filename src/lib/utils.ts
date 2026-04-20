@@ -9,8 +9,8 @@ export const formatBytes = (bytes: number, decimals = 2) => {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 };
 
-export const triggerDownload = (uint8Array: Uint8Array, filename: string) => {
-  const blob = new Blob([uint8Array], { type: 'application/pdf' });
+export const triggerDownload = (uint8Array: Uint8Array, filename: string, mimeType = 'application/pdf') => {
+  const blob = new Blob([uint8Array], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

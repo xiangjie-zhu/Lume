@@ -635,6 +635,10 @@ export default function ReaderTool({
            <Document
             file={file}
             onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={(err) => {
+              console.error('[Lume] PDF load error:', err);
+              (window as any).__lumePdfError = { message: err?.message, name: err?.name };
+            }}
             loading={<div className="flex items-center gap-2 mt-20"><Loader2 className="animate-spin w-5 h-5"/> Loading PDF...</div>}
            >
              <div className="flex flex-col items-center gap-8 pb-32">

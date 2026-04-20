@@ -1,8 +1,11 @@
 node_modules/
-build/
 dist/
+dist-electron/
 coverage/
 .DS_Store
 *.log
 .env*
 !.env.example
+
+# icon source is tracked (icon.png, icon.icns); intermediate iconset isn't
+build/icon.iconset/
