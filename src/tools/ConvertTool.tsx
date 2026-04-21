@@ -49,8 +49,8 @@ export default function ConvertTool() {
       const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
       const urls: { id: number, url: string }[] = [];
 
-      // Extract first 10 pages max to prevent browser crush in preview
-      const maxPages = Math.min(pdf.numPages, 10);
+      // Extract all pages
+      const maxPages = pdf.numPages;
       for (let i = 1; i <= maxPages; i++) {
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 2.0 }); // High res
@@ -154,7 +154,7 @@ export default function ConvertTool() {
                   disabled={isProcessing}
                   className="px-6 py-2 bg-natural-accent text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 flex items-center"
                 >
-                  {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : 'Extract Images (Top 10 max)'}
+                  {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : 'Extract Formatted Images'}
                 </button>
               </div>
               
