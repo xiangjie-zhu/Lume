@@ -28,3 +28,36 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--color-natural-border); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.1); }
 
+/* Text Layer Selection fix — keeps selections aligned with the visible glyphs
+   instead of spilling across blank line boxes in some PDFs. */
+.react-pdf__Page__textContent span {
+  line-height: 1 !important;
+  color: transparent !important;
+  mix-blend-mode: multiply;
+}
+::selection {
+  background: rgba(159, 176, 154, 0.4); /* Sage green transparent selection */
+}
+
+/* Outline Styling — nested table-of-contents in the Reader sidebar */
+.react-pdf__Outline {
+  display: flex;
+  flex-direction: column;
+  padding-left: 0;
+  list-style: none;
+}
+.react-pdf__Outline ul {
+  padding-left: 12px;
+  list-style: none;
+}
+.react-pdf__Outline li > a {
+  display: block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.react-pdf__Outline li > a:hover {
+  background: rgba(0,0,0,0.05);
+}
+

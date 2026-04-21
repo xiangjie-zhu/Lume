@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
+import { Document, Page, Outline, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { FileText, Loader2, ZoomIn, ZoomOut, Search, Moon, Sun, ChevronLeft, ChevronRight, Edit3, Underline as UnderlineIcon, Download, Undo2, Redo2, MessageSquare, PanelRightOpen, PanelRightClose, PanelLeftOpen, PanelLeftClose, Trash2, X, ChevronUp, ChevronDown, Image as ImageIcon, ChevronDown as DropdownIcon, Menu } from 'lucide-react';
@@ -54,6 +54,9 @@ export default function ReaderTool({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showCommentsPanel, setShowCommentsPanel] = useState(false);
   const [showThumbnailsPanel, setShowThumbnailsPanel] = useState(true);
+  const [leftPanelMode, setLeftPanelMode] = useState<'thumbnails' | 'outline'>('thumbnails');
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [dragState, setDragState] = useState<{ id: string; startX: number; startY: number; initialRect: { x: number; y: number; w: number; h: number } } | null>(null);
 
@@ -433,7 +436,7 @@ export default function ReaderTool({
 
   return (
     <div className={`h-full flex flex-col transition-colors duration-300 ${darkMode ? 'bg-[#1e1e1e] text-gray-200' : 'bg-natural-bg text-natural-text'}`}>
-      <div className={`flex flex-col gap-2 p-4 border-b ${darkMode ? 'border-gray-800 bg-[#252525]' : 'border-natural-border bg-white/50 backdrop-blur-md'}`}>
+      <div className={`flex flex-col gap-2 p-4 border-b relative z-[100] ${darkMode ? 'border-gray-800 bg-[#252525]' : 'border-natural-border bg-white/50 backdrop-blur-md'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
@@ -530,6 +533,24 @@ export default function ReaderTool({
               
               <div className="w-px h-4 bg-gray-300 mx-2"></div>
               
+              <div className="flex items-center gap-1.5 ml-1 mr-1" title="Highlight/Underline Color">
+                <input 
+                  type="color" 
+                  value={`#${Math.round(annotationColor.r * 255).toString(16).padStart(2, '0')}${Math.round(annotationColor.g * 255).toString(16).padStart(2, '0')}${Math.round(annotationColor.b * 255).toString(16).padStart(2, '0')}`}
+                  onChange={(e) => {
+                    const hex = e.target.value;
+                    setAnnotationColor({
+                      r: parseInt(hex.slice(1, 3), 16) / 255,
+                      g: parseInt(hex.slice(3, 5), 16) / 255,
+                      b: parseInt(hex.slice(5, 7), 16) / 255
+                    });
+                  }}
+                  className={`w-8 h-8 p-0 cursor-pointer overflow-hidden rounded-[4px] border-0 outline-none`}
+                />
+              </div>
+
+              <div className="w-px h-4 bg-gray-300 mx-2"></div>
+              
               <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-lg hover:bg-black/5">
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
@@ -610,28 +631,73 @@ export default function ReaderTool({
           transition={{ type: "spring", stiffness: 400, damping: 35, mass: 0.8 }}
           className={`h-full overflow-hidden flex flex-col shrink-0 border-transparent ${darkMode ? 'bg-[#2a2a2a]' : 'bg-natural-sidebar/30'} ${showThumbnailsPanel ? 'border-r border-natural-border' : ''} ${darkMode && showThumbnailsPanel ? '!border-gray-800' : ''}`}
         >
-          <div className="w-48 p-4 h-full overflow-y-auto flex flex-col">
-            <div className="text-xs uppercase tracking-wider mb-4 opacity-50 font-bold">Thumbnails</div>
-            <div className="space-y-4">
-              {Array.from(new Array(numPages || 0), (el, index) => (
-                <button 
-                  key={`thumb_${index + 1}`}
-                  onClick={() => {
-                    setPageNumber(index + 1);
-                    document.getElementById(`page-${index + 1}`)?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className={`w-full shrink-0 aspect-[1/1.4] bg-white rounded shadow-sm border-2 overflow-hidden transition-all ${pageNumber === index + 1 ? 'border-natural-accent scale-105' : 'border-transparent'}`}
-                >
-                  <Document file={file}>
-                    <Page pageNumber={index + 1} width={150} renderTextLayer={false} renderAnnotationLayer={false} />
-                  </Document>
-                </button>
-              ))}
+          <div className="w-48 h-full overflow-hidden flex flex-col">
+            <div className="flex items-center text-xs font-bold uppercase tracking-wider p-2 mb-2 border-b border-natural-border/50">
+              <button 
+                onClick={() => setLeftPanelMode('thumbnails')}
+                className={`flex-1 py-2 text-center rounded-md transition-colors ${leftPanelMode === 'thumbnails' ? 'bg-natural-accent text-white' : 'opacity-50 hover:bg-black/5'}`}
+              >
+                Pages
+              </button>
+              <button 
+                onClick={() => setLeftPanelMode('outline')}
+                className={`flex-1 py-2 text-center rounded-md transition-colors ${leftPanelMode === 'outline' ? 'bg-natural-accent text-white' : 'opacity-50 hover:bg-black/5'}`}
+              >
+                Outline
+              </button>
             </div>
+            
+            {leftPanelMode === 'thumbnails' ? (
+              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
+                {Array.from(new Array(numPages || 0), (el, index) => (
+                  <button 
+                    key={`thumb_${index + 1}`}
+                    onClick={() => {
+                      setPageNumber(index + 1);
+                      document.getElementById(`page-${index + 1}`)?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`w-full shrink-0 aspect-[1/1.4] bg-white rounded shadow-sm border-2 overflow-hidden transition-all relative ${pageNumber === index + 1 ? 'border-natural-accent scale-105 z-10' : 'border-transparent'}`}
+                  >
+                    <Document file={file}>
+                      <Page pageNumber={index + 1} width={150} renderTextLayer={false} renderAnnotationLayer={false} />
+                    </Document>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className={`flex-1 overflow-y-auto px-2 pb-4 text-sm ${darkMode ? 'text-gray-300' : 'text-natural-dim'} outline-panel-container`}>
+                <Document file={file}>
+                  <Outline 
+                    className="pdf-outline"
+                    onItemClick={({ pageNumber }) => {
+                      if (pageNumber) {
+                        setPageNumber(pageNumber);
+                        document.getElementById(`page-${pageNumber}`)?.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }} 
+                  />
+                </Document>
+              </div>
+            )}
           </div>
         </motion.div>
 
-        <div className="flex-1 overflow-auto flex flex-col items-center p-8 relative scroll-smooth" id="pdf-scroll-container">
+        <div 
+          className="flex-1 overflow-auto flex flex-col items-center p-8 relative scroll-smooth" 
+          id="pdf-scroll-container"
+          onScroll={() => {
+            setIsScrolling(true);
+            if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = setTimeout(() => setIsScrolling(false), 1500);
+          }}
+          onWheel={(e) => {
+            if (e.ctrlKey || e.metaKey) {
+              e.preventDefault();
+              const delta = e.deltaY * -0.005;
+              setScale(s => Math.min(Math.max(s + delta, 0.5), 3));
+            }
+          }}
+        >
            <Document
             file={file}
             onLoadSuccess={onDocumentLoadSuccess}
@@ -741,7 +807,7 @@ export default function ReaderTool({
            </Document>
 
           {/* Floating Navigation Controls */}
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/80 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-lg z-30">
+          <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/80 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-lg z-30 transition-opacity duration-500 ${isScrolling ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <button 
               disabled={pageNumber <= 1} 
               onClick={() => {

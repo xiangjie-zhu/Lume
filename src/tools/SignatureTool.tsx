@@ -7,6 +7,8 @@ import { triggerDownload } from '../lib/utils';
 export default function SignatureTool() {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [targetPage, setTargetPage] = useState<number>(1);
+  const [maxPages, setMaxPages] = useState<number>(1);
   const sigCanvas = useRef<SignatureCanvas>(null);
 
   const clearSignature = () => {
@@ -28,14 +30,14 @@ export default function SignatureTool() {
       const sigImageBytes = await fetch(sigDataUrl).then(res => res.arrayBuffer());
       const pngImage = await pdfDoc.embedPng(sigImageBytes);
       
-      // Add it to the first page for simplicity
       const pages = pdfDoc.getPages();
-      const firstPage = pages[0];
-      const { width, height } = firstPage.getSize();
+      const pageIndex = Math.min(Math.max(1, targetPage), pages.length) - 1;
+      const targetPageObj = pages[pageIndex];
+      const { width, height } = targetPageObj.getSize();
       
       const pngDims = pngImage.scale(0.5);
       
-      firstPage.drawImage(pngImage, {
+      targetPageObj.drawImage(pngImage, {
         x: 50,
         y: 50, // Bottom-left padding
         width: pngDims.width,
@@ -67,7 +69,18 @@ export default function SignatureTool() {
               <label className="flex-1 min-h-[120px] flex flex-col items-center justify-center cursor-pointer border-2 border-dashed border-natural-border hover:border-natural-accent bg-natural-bg/50 rounded-xl transition-colors">
                 <FilePlus className="w-6 h-6 text-natural-dim mb-2" />
                 <span className="text-sm text-natural-text font-medium">Browse PDF</span>
-                <input type="file" accept="application/pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                <input type="file" accept="application/pdf" className="hidden" onChange={async (e) => {
+                  const f = e.target.files?.[0] || null;
+                  setFile(f);
+                  if (f) {
+                    try {
+                      const ab = await f.arrayBuffer();
+                      const doc = await PDFDocument.load(ab);
+                      setMaxPages(doc.getPageCount());
+                      setTargetPage(1);
+                    } catch(err) { console.error(err); }
+                  }
+                }} />
               </label>
             ) : (
               <div className="flex items-center justify-between p-4 bg-natural-bg rounded-xl border border-natural-border">
@@ -102,7 +115,23 @@ export default function SignatureTool() {
         <div className="w-full lg:w-72 flex flex-col gap-4">
           <div className="bg-white p-6 rounded-2xl border border-natural-border shadow-[0_4px_12px_rgba(0,0,0,0.02)] h-full flex flex-col">
             <h3 className="text-[13px] font-medium text-natural-dim uppercase tracking-wide mb-4">3. Finalize</h3>
-            <p className="text-sm text-natural-text mb-6">The signature will be appended to the bottom-left corner of the first page.</p>
+            <p className="text-sm text-natural-text mb-6">The signature will be appended to the bottom-left corner of the selected page.</p>
+            
+            <div className="mb-6">
+              <label className="block text-xs font-medium text-natural-dim uppercase tracking-wide mb-2">Target Page</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  min={1} 
+                  max={maxPages}
+                  value={targetPage}
+                  onChange={(e) => setTargetPage(parseInt(e.target.value) || 1)}
+                  className="w-20 px-3 py-2 border border-natural-border rounded-lg text-sm outline-none focus:border-natural-accent"
+                  disabled={!file}
+                />
+                <span className="text-sm text-natural-dim">of {maxPages}</span>
+              </div>
+            </div>
             
             <div className="mt-auto">
               <button
